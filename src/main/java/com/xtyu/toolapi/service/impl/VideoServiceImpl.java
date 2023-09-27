@@ -14,6 +14,7 @@ import com.xtyu.toolapi.utils.RestTemplateUtil;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -42,6 +43,7 @@ public class VideoServiceImpl implements VideoService {
     @Resource
     private ParsingInfoMapper parsingInfoMapper;
 
+
     @Override
     public VideoInfoDto getVideoInfo(String openid, String url) {
         WxUser wxUser = wxUserService.getUserInfoByOpenId(openid);
@@ -52,8 +54,9 @@ public class VideoServiceImpl implements VideoService {
         }
         isContainsStrings(url);
         HttpHeaders httpHeaders = new HttpHeaders();
-        httpHeaders.set("User-Agent", "Mozilla/5.0 (Linux; Android 5.0; SM-G900P Build/LRX21T) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Mobile Safari/537.36");
-        httpHeaders.set("Referer", url);
+        httpHeaders.set("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36");
+
+
         VideoInfoDto videoInfoDto;
         //抖音快手Java解析其余短视频平台Java版本暂时没时间写先用php
         if (url.contains("douyin")) {
@@ -86,18 +89,18 @@ public class VideoServiceImpl implements VideoService {
             Asserts.urlParsingFail("解析链接ID异常");
         //获取链接ID
         String id = matcher.group(1);
-        String dyWebApi = "https://www.iesdouyin.com/web/api/v2/aweme/iteminfo/?item_ids=" + id;
-        String content = restTemplateUtil.getForObject(dyWebApi, httpHeaders, String.class);
+        String dyInfoApi = "https://www.douyin.com/light/" + id;
+        String content = restTemplateUtil.getForObject(dyInfoApi, httpHeaders, String.class);
         Asserts.urlInfoNotNull(content, "API请求异常");
-        JSONObject videoInfo = JSON.parseObject(content).getJSONArray("item_list").getJSONObject(0);
+        Matcher contentMatcher = Pattern.compile("video_id%3D(.*?)%26").matcher(content);
+        if (!contentMatcher.find())
+            Asserts.urlParsingFail("解析链接ID异常");
+        String videoUrl = contentMatcher.group(1);
+        String resVideoUrl = "https://www.douyin.com/aweme/v1/play/?video_id=" + videoUrl;
+
         VideoInfoDto videoInfoDto = new VideoInfoDto();
-        videoInfoDto.setTime(videoInfo.getString("create_time"));
-        videoInfoDto.setCover(videoInfo.getJSONObject("video").getJSONObject("origin_cover").getJSONArray("url_list").getString(0));
-        videoInfoDto.setUrl(videoInfo.getJSONObject("video").getJSONObject("play_addr").getJSONArray("url_list").getString(0).replace("playwm", "play"));
-        videoInfoDto.setTitle(videoInfo.getString("desc"));
-        videoInfoDto.setAuthor(videoInfo.getJSONObject("author").getString("nickname"));
-        videoInfoDto.setAvatar(videoInfo.getJSONObject("author").getJSONObject("avatar_larger").getJSONArray("url_list").getString(0));
-        return videoInfoDto;
+        videoInfoDto.setUrl(resVideoUrl);
+       return videoInfoDto;
     }
 
     @Override

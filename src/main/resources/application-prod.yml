@@ -1,0 +1,19 @@
+spring:
+  datasource:
+    url: jdbc:mysql://139.159.227.201:3306/wx_program
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: wangzq2013011122
+
+logging:
+  file:
+    name: toolApi.log
+    path: /data/logs
+
+server:
+  port: 10521
+
+wx:
+  appId: wx74559f2e91870c33
+  secret: c2ae076b585bd3962998efd99e5b1a6d
+
